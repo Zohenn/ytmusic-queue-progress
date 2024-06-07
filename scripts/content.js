@@ -12,7 +12,6 @@ function getQueueElement() {
     return document.querySelector('#queue #contents');
 }
 
-
 /**
  * @param {string} duration 
  * @returns {number[]}
@@ -26,22 +25,22 @@ function parseDuration(duration) {
  * @returns {{duration: number, current: boolean}[]}
  */
 function parseQueue(queueElement) {
-    const queueElements = queueElement.querySelectorAll('.ytmusic-player-queue');
+    const queueItems = queueElement.querySelectorAll('.ytmusic-player-queue');
 
     const parsedSongs = [];
 
-    for (let queueElement of queueElements) {
-        if (queueElement.tagName !== 'YTMUSIC-PLAYER-QUEUE-ITEM') {
-            queueElement = queueElement.querySelector('#primary-renderer ytmusic-player-queue-item')
+    for (let queueItem of queueItems) {
+        if (queueItem.tagName !== 'YTMUSIC-PLAYER-QUEUE-ITEM') {
+            queueItem = queueItem.querySelector('#primary-renderer ytmusic-player-queue-item')
         }
 
-        const rawDuration = queueElement.getElementsByClassName('duration')[0].textContent;
+        const rawDuration = queueItem.getElementsByClassName('duration')[0].textContent;
 
         const [minutes, seconds] = parseDuration(rawDuration);
 
         parsedSongs.push({
             duration: minutes * 60 + seconds,
-            current: !!queueElement.attributes.selected,
+            current: !!queueItem.attributes.selected,
         });
     }
 
@@ -156,6 +155,7 @@ function showQueueProgress(progress) {
  */
 function hookIntoPlayer() {
     let videoElement = getVideoElement();
+    let videoEventListenerSet = false;
     let previousTime = 0;
     let previousQueueProgress = {
         songs: [],
@@ -163,7 +163,17 @@ function hookIntoPlayer() {
         totalTime: 0,
     };
 
+    const setVideoEventListener = () => {
+        videoElement = getVideoElement();
+        videoElement?.addEventListener('timeupdate', updateProgress);
+        videoEventListenerSet = !!videoElement;
+    };
+
     const updateProgress = function() {
+        if (!videoEventListenerSet) {
+            setVideoEventListener();
+        }
+
         const currentTime = getCurrentTime();
 
         if (this instanceof HTMLElement && currentTime === previousTime) {
@@ -183,13 +193,11 @@ function hookIntoPlayer() {
         previousQueueProgress = queueProgress;
     };
 
-    videoElement?.addEventListener('timeupdate', updateProgress);
-
     const mutationObserver = new MutationObserver(updateProgress);
     mutationObserver.observe(getQueueElement(), { subtree: true, childList: true, attributes: true });
 
     return () => {
-        videoElement.removeEventListener('timeupdate', updateProgress);
+        videoElement?.removeEventListener('timeupdate', updateProgress);
         mutationObserver.disconnect();
     };
 }
