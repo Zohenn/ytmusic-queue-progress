@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Youtube Music Queue Progress",
+  "description": "Shows how far you are into your current music queue.",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "matches": [
+        "https://music.youtube.com/*"
+      ]
+    }
+  ]
+}
